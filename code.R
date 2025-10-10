@@ -4,7 +4,7 @@
 # This script runs three regression-based CEA methods (SUR, OLS, GLM)
 # using bootstrap resampling. It estimates incremental costs, incremental
 # QALYs, ICERs, and visualizes uncertainty via cost-effectiveness planes
-# and cost-effectiveness acceptability curves (CEACs).
+# and cost-effectiveness acceptability curves (CEACs).We have provided an example dataset (example dataset.csv, n=100).
 # =============================================================
 
 # -----------------------------
@@ -39,9 +39,9 @@ dataset <- read.csv("example dataset.csv", header = TRUE)
 # 3. Data Dictionary
 # -----------------------------
 # class:      0 = control, 1 = intervention
-# cost:       Total cost in USD
+# societal:   societal perspective
 # QALYs:      Quality-adjusted life years
-# cost_m0:    Baseline cost
+# societal_m0:    Baseline cost from the societal perspective
 # QALYs_m0:   Baseline QALYs
 # age:        1 = <30 years; 2 = ≥30 years
 # group:      1 = daily PrEP; 2 = event-driven PrEP
@@ -54,8 +54,8 @@ dataset <- read.csv("example dataset.csv", header = TRUE)
 set.seed(3407) # Set random seed for reproducibility
 fsur <- function(x, i) {
   dataset <- x[i,] # Extract bootstrap sample
-  r1 <- cost ~ class + cost_m0 + age + group + income + causal # Cost regression model (class = treatment group variable)
-  r2 <- QALYs ~ class + QALYs_m0 + age + group + income + causal # Effectiveness regression model
+  r1 <- societal ~ class + societal_m0 + age + group + income + casual # Cost regression model (class = treatment group variable)
+  r2 <- QALYs ~ class + QALYs_m0 + age + group + income + casual # Effectiveness regression model
   fitsur <- systemfit(list(costreg = r1, effectreg = r2), "SUR", data = dataset) # Fit SUR model
   betas <- fitsur$coefficients # Extract regression coefficients
   return(c(betas[["costreg_class"]], betas[["effectreg_class"]])) # Return incremental costs and effects
@@ -147,11 +147,11 @@ fols <- function(x, i) {
   dataset <- x[i, ]  # Extract bootstrap sample
   
   #Cost model specification (linear regression)
-  ols_cost <- lm(cost ~ class + cost_m0 + age + group + income + causal, 
+  ols_cost <- lm(societal ~ class + societal_m0 + age + group + income + casual, 
                  data = dataset)
   
   #Effectiveness model specification (linear regression)
-  ols_qalys <- lm(QALYs ~ class + QALYs_m0 + age + group + income + causal, 
+  ols_qalys <- lm(QALYs ~ class + QALYs_m0 + age + group + income + casual, 
                   data = dataset)
   
   # Extract treatment coefficients (incremental cost and QALYs)
@@ -184,14 +184,14 @@ fsur_glm <- function(x, i) {
   
   #Cost model: Gamma distribution with log link
   cost_model <- glm(
-    cost ~ class + cost_m0 + age + group + income + causal,
+    societal ~ class + societal_m0 + age + group + income + casual,
     family = Gamma(link = "log"),  # Appropriate for right-skewed cost data
     data = dataset
   )
   
   #Effectiveness model: Gamma distribution (Gaussian if PADS)
   qaly_model <- glm(
-    QALYs ~ class + QALYs_m0 + age + group + income + causal,
+    QALYs ~ class + QALYs_m0 + age + group + income + casual,
     family = Gamma(link = "log"),  
     data = dataset
   )
