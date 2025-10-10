@@ -1,21 +1,61 @@
-#Load required packages
-library(systemfit) # For Seemingly Unrelated Regression (SUR) analysis
-library(car) # For running SUR models
-library(boot) # For bootstrap methods
-library(ggplot2) # For cost-effectiveness plane and CEAC plots
-library(ggpointdensity) # For enhanced cost-effectiveness plane visualization
-library(readxl) # For importing .xlsx format data
-library(tidyverse) # For data manipulation
+# =============================================================
+# README: Cost-Effectiveness Analysis (CEA) Pipeline
+# =============================================================
+# This script runs three regression-based CEA methods (SUR, OLS, GLM)
+# using bootstrap resampling. It estimates incremental costs, incremental
+# QALYs, ICERs, and visualizes uncertainty via cost-effectiveness planes
+# and cost-effectiveness acceptability curves (CEACs).
+# =============================================================
 
-#Data import
-dataset <- read.csv("C:/Users/xxx/xxx.csv", header = TRUE)
+# -----------------------------
+# 1. Required Packages & Setup
+# -----------------------------
+R_version <- "4.4.1"
+required_packages <- c(
+  "mice", "systemfit", "car", "boot", "ggplot2",
+  "ggpointdensity", "readxl", "tidyverse"
+)
+
+installed <- rownames(installed.packages())
+for (pkg in required_packages) {
+  if (!(pkg %in% installed)) install.packages(pkg, dependencies = TRUE)
+}
+
+library(mice)           # v3.18.0
+library(systemfit)      # v1.1-30
+library(car)            # v3.1-2
+library(boot)           # v1.3-30
+library(ggplot2)        # v3.5.0
+library(ggpointdensity) # v0.2.0
+library(readxl)         # v1.4.3
+library(tidyverse)      # v2.0.0
+
+# -----------------------------
+# 2. Data Import
+# -----------------------------
+dataset <- read.csv("example dataset.csv", header = TRUE)
+
+# -----------------------------
+# 3. Data Dictionary
+# -----------------------------
+# class:      0 = control, 1 = intervention
+# cost:       Total cost in USD
+# QALYs:      Quality-adjusted life years
+# cost_m0:    Baseline cost
+# QALYs_m0:   Baseline QALYs
+# age:        1 = <30 years; 2 = ≥30 years
+# group:      1 = daily PrEP; 2 = event-driven PrEP
+# income:     1 = ≤3999; 2 = 4000–7999; 3 = ≥8000 (RMB)
+# casual:     1 = has casual male partner; 2 = none
+# units:      currency = USD
+
 
 #1.Define SUR model fitting function
 set.seed(3407) # Set random seed for reproducibility
 fsur <- function(x, i) {
   dataset <- x[i,] # Extract bootstrap sample
-  r1 <- cost ~ class + cost_m0 + xxx + xxx + xxx + xxx # Cost regression model (class = treatment group variable)
-  r2 <- effectiveness ~ class + effectiveness_m0 + xxx + xxx + xxx + xxx # Effectiveness regression model
+  r1 <- cost ~ class + cost_m0 + age + group + income + causal # Cost regression model (class = treatment group variable)
+  r2 <- QALYs ~ class + QALYs_m0 + age + group + income + causal # Effectiveness regression model
   fitsur <- systemfit(list(costreg = r1, effectreg = r2), "SUR", data = dataset) # Fit SUR model
   betas <- fitsur$coefficients # Extract regression coefficients
   return(c(betas[["costreg_class"]], betas[["effectreg_class"]])) # Return incremental costs and effects
@@ -107,11 +147,11 @@ fols <- function(x, i) {
   dataset <- x[i, ]  # Extract bootstrap sample
   
   #Cost model specification (linear regression)
-  ols_cost <- lm(cost ~ class + cost_m0 + xxx + xxx + xxx + xxx, 
+  ols_cost <- lm(cost ~ class + cost_m0 + age + group + income + causal, 
                  data = dataset)
   
   #Effectiveness model specification (linear regression)
-  ols_qalys <- lm(effectiveness ~ class + effectiveness_m0 + xxx + xxx + xxx + xxx, 
+  ols_qalys <- lm(QALYs ~ class + QALYs_m0 + age + group + income + causal, 
                   data = dataset)
   
   # Extract treatment coefficients (incremental cost and QALYs)
@@ -144,14 +184,14 @@ fsur_glm <- function(x, i) {
   
   #Cost model: Gamma distribution with log link
   cost_model <- glm(
-    cost ~ class + cost_m0 + xxx + xxx + xxx + xxx,
+    cost ~ class + cost_m0 + age + group + income + causal,
     family = Gamma(link = "log"),  # Appropriate for right-skewed cost data
     data = dataset
   )
   
   #Effectiveness model: Gamma distribution (Gaussian if PADS)
   qaly_model <- glm(
-    effectiveness ~ class + effectiveness_m0 + xxx + xxx + xxx + xxx,
+    QALYs ~ class + QALYs_m0 + age + group + income + causal,
     family = Gamma(link = "log"),  
     data = dataset
   )
@@ -179,4 +219,11 @@ bootce <- boot(data = dataset, statistic = fsur_glm, R = 5000)  # 5000 replicate
 
 #[Identical post-processing and visualization as previous implementations...]
 
+# -----------------------------
+# 4. Session Info for Reproducibility
+# -----------------------------
+sessionInfo()
 
+# -----------------------------
+# END OF SCRIPT
+# -----------------------------
