@@ -45,6 +45,6 @@ dataset <- read.csv("example dataset.csv", header = TRUE)
 # QALYs_m0:   Baseline QALYs
 # age:        1 = <30 years; 2 = ≥30 years
 # group:      1 = daily PrEP; 2 = event-driven PrEP
-# income:     1 = ≤3999; 2 = 4000–7999; 3 = ≥8000 (RMB)
+# income:     1 = ≤3999; 2 = 4000–7999; 3 = ≥8000 (CNY)
 # casual:     1 = has casual male partner; 2 = none
 # units:      currency = USD
