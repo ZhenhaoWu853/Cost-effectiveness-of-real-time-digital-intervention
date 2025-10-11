@@ -39,7 +39,7 @@ dataset <- read.csv("example dataset.csv", header = TRUE)
 # 3. Data Dictionary
 # -----------------------------
 # class:      0 = control, 1 = intervention
-# societal:   societal perspective
+# societal:   cost from the societal perspective for over 6 months
 # QALYs:      Quality-adjusted life years
 # societal_m0:    Baseline cost from the societal perspective
 # QALYs_m0:   Baseline QALYs
@@ -227,3 +227,4 @@ sessionInfo()
 # -----------------------------
 # END OF SCRIPT
 # -----------------------------
+
